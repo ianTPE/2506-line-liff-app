@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useLiff } from '../providers/LiffProvider';
 import { Profile } from '@liff/get-profile';
@@ -10,24 +11,22 @@ export function UserProfile() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      if (!liff) return;
+      setLoading(true);
+      try {
+        const userProfile = await liff.getProfile();
+        setProfile(userProfile);
+      } catch (error) {
+        console.error('無法取得使用者資料:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     if (isReady && isLoggedIn && liff) {
       fetchProfile();
     }
   }, [isReady, isLoggedIn, liff]);
-
-  const fetchProfile = async () => {
-    if (!liff) return;
-    
-    setLoading(true);
-    try {
-      const userProfile = await liff.getProfile();
-      setProfile(userProfile);
-    } catch (error) {
-      console.error('無法取得使用者資料:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogin = () => {
     if (liff) {
@@ -68,10 +67,13 @@ export function UserProfile() {
     <div className="text-center p-8">
       {profile && (
         <div className="mb-6">
-          <img
-            src={profile.pictureUrl}
+          <Image
+            src={profile.pictureUrl!}
             alt="Profile"
+            width={96}
+            height={96}
             className="w-24 h-24 rounded-full mx-auto mb-4"
+            priority
           />
           <h2 className="text-xl font-bold">{profile.displayName}</h2>
           <p className="text-gray-600 text-sm">{profile.userId}</p>

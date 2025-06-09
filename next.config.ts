@@ -7,11 +7,7 @@ const nextConfig: NextConfig = {
     domains: ['images.unsplash.com', 'cdn.example.com'],
     formats: ['image/webp', 'image/avif'],
   },
-  // 多語系設定
-  i18n: {
-    locales: ['zh-TW', 'en'],
-    defaultLocale: 'zh-TW',
-  },
+
   // 自動導向設定
   async redirects() {
     return [

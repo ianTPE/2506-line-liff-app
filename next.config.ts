@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // 圖片優化設定
   images: {
-    domains: ['images.unsplash.com', 'cdn.example.com'],
+    domains: ['images.unsplash.com', 'cdn.example.com', 'profile.line-scdn.net'],
     formats: ['image/webp', 'image/avif'],
   },
 

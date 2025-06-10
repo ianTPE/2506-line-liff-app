@@ -1,5 +1,12 @@
 import { UserProfile } from './components/UserProfile';
-import { LiffFeatures } from './components/LiffFeatures';
+import dynamic from 'next/dynamic';
+const LiffFeatures = dynamic(
+  () => import('./components/LiffFeatures').then(mod => mod.LiffFeatures),
+  { 
+    loading: () => <p>載入功能中...</p>,
+    ssr: false // LIFF 功能只在客戶端執行
+  }
+);
 
 export default function Home() {
   return (

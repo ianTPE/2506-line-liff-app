@@ -210,7 +210,7 @@ export const MemberPage: React.FC = () => {
             <div className="text-2xl mb-2">💸</div>
             <div className="font-medium">現金折抵</div>
             <div className="text-sm text-gray-500">任意點數</div>
-          </div>
+          </button>
         </div>
       </div>
     </div>

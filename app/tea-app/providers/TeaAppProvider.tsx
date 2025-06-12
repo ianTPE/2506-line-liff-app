@@ -71,7 +71,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
   }, [cartItems]);
 
   // API 請求函數
-  const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
+  const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<ApiResponse<unknown>> => {
     try {
       const response = await fetch(`${BUBBLE_API_BASE}${endpoint}`, {
         headers: {
@@ -99,6 +99,100 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
       };
     }
   };
+
+  // 載入模擬商品數據
+  const getMockProducts = async (category: string): Promise<Product[]> => {
+    try {
+      // 動態導入配置以避免 SSR 問題
+      const { MOCK_PRODUCTS } = await import('../config');
+      
+      return category === 'all' 
+        ? MOCK_PRODUCTS 
+        : MOCK_PRODUCTS.filter(product => product.category === category);
+    } catch (error) {
+      console.error('Failed to load mock products:', error);
+      return [];
+    }
+  };
+
+  // 載入商品
+  const loadProducts = useCallback(async (category: string = 'all') => {
+    try {
+      setIsLoading(true);
+      const endpoint = category === 'all' ? '/get-products' : `/get-products?category=${category}`;
+      const response = await apiRequest(endpoint) as ApiResponse<Product[]>;
+      
+      if (response.status === 'success' && response.data) {
+        setProducts(response.data);
+      } else {
+        // 使用模擬數據作為後備
+        const mockProducts = await getMockProducts(category);
+        setProducts(mockProducts);
+      }
+      setSelectedCategory(category);
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      const mockProducts = await getMockProducts(category);
+      setProducts(mockProducts);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 購物車操作
+  const addToCart = useCallback((item: CartItem) => {
+    setCartItems(prev => {
+      const existingIndex = prev.findIndex(
+        cartItem => 
+          cartItem.product_id === item.product_id &&
+          JSON.stringify(cartItem.customizations) === JSON.stringify(item.customizations)
+      );
+
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += item.quantity;
+        return updated;
+      } else {
+        return [...prev, { ...item, id: Date.now().toString() }];
+      }
+    });
+  }, []);
+
+  const removeFromCart = useCallback((itemId: string) => {
+    setCartItems(prev => prev.filter(item => item.id !== itemId));
+  }, []);
+
+  const updateCartItem = useCallback((itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    
+    setCartItems(prev => 
+      prev.map(item => 
+        item.id === itemId ? { ...item, quantity } : item
+      )
+    );
+  }, [removeFromCart]);
+
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+  }, []);
+
+  // UI 操作
+  const showProductModal = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedProduct(null);
+  }, []);
+
+  const selectStore = useCallback((store: Store) => {
+    setSelectedStore(store);
+  }, []);
 
   // 註冊/更新用戶
   const registerUser = useCallback(async () => {
@@ -131,7 +225,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
 
     try {
       const profile = await liff.getProfile();
-      const response = await apiRequest<User>(`/get-user-data?user_id=${profile.userId}`);
+      const response = await apiRequest(`/get-user-data?user_id=${profile.userId}`) as ApiResponse<User>;
       
       if (response.status === 'success' && response.data) {
         setUser(response.data);
@@ -155,100 +249,6 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
     }
   }, [liff, isLoggedIn]);
 
-  // 載入商品
-  const loadProducts = useCallback(async (category: string = 'all') => {
-    try {
-      setIsLoading(true);
-      const endpoint = category === 'all' ? '/get-products' : `/get-products?category=${category}`;
-      const response = await apiRequest<Product[]>(endpoint);
-      
-      if (response.status === 'success' && response.data) {
-        setProducts(response.data);
-      } else {
-        // 使用模擬數據作為後備
-        const mockProducts = await getMockProducts(category);
-        setProducts(mockProducts);
-      }
-      setSelectedCategory(category);
-    } catch (error) {
-      console.error('Failed to load products:', error);
-      const mockProducts = await getMockProducts(category);
-      setProducts(mockProducts);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // 載入模擬商品數據
-  const getMockProducts = async (category: string): Promise<Product[]> => {
-    try {
-      // 動態導入配置以避免 SSR 問題
-      const { MOCK_PRODUCTS } = await import('../config');
-      
-      return category === 'all' 
-        ? MOCK_PRODUCTS 
-        : MOCK_PRODUCTS.filter(product => product.category === category);
-    } catch (error) {
-      console.error('Failed to load mock products:', error);
-      return [];
-    }
-  };
-
-  // 購物車操作
-  const addToCart = useCallback((item: CartItem) => {
-    setCartItems(prev => {
-      const existingIndex = prev.findIndex(
-        cartItem => 
-          cartItem.product_id === item.product_id &&
-          JSON.stringify(cartItem.customizations) === JSON.stringify(item.customizations)
-      );
-
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += item.quantity;
-        return updated;
-      } else {
-        return [...prev, { ...item, id: Date.now().toString() }];
-      }
-    });
-  }, []);
-
-  const updateCartItem = useCallback((itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(itemId);
-      return;
-    }
-    
-    setCartItems(prev => 
-      prev.map(item => 
-        item.id === itemId ? { ...item, quantity } : item
-      )
-    );
-  }, []);
-
-  const removeFromCart = useCallback((itemId: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== itemId));
-  }, []);
-
-  const clearCart = useCallback(() => {
-    setCartItems([]);
-  }, []);
-
-  // UI 操作
-  const showProductModal = useCallback((product: Product) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedProduct(null);
-  }, []);
-
-  const selectStore = useCallback((store: Store) => {
-    setSelectedStore(store);
-  }, []);
-
   // 創建訂單
   const createOrder = useCallback(async (orderData: Partial<Order>): Promise<ApiResponse<Order>> => {
     if (!user || cartItems.length === 0) {
@@ -269,10 +269,10 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
         ...orderData,
       };
 
-      const response = await apiRequest<Order>('/create-order', {
+      const response = await apiRequest('/create-order', {
         method: 'POST',
         body: JSON.stringify(orderRequest),
-      });
+      }) as ApiResponse<Order>;
 
       if (response.status === 'success') {
         clearCart();
@@ -304,8 +304,8 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
 
   // 初始化
   useEffect(() => {
-    const initializeApp = async () => {
-      if (isReady && isLoggedIn) {
+    if (isReady && isLoggedIn) {
+      const initializeApp = async () => {
         try {
           await registerUser();
           await loadUserData();
@@ -325,11 +325,11 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
         } finally {
           setIsLoading(false);
         }
-      }
-    };
-    
-    initializeApp();
-  }, [isReady, isLoggedIn]);
+      };
+      
+      initializeApp();
+    }
+  }, [isReady, isLoggedIn, registerUser, loadUserData, loadProducts]);
 
   const value: TeaAppContextType = {
     // 狀態

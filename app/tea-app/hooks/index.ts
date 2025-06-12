@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTeaApp } from '../providers/TeaAppProvider';
 import { showToast } from '../utils';
+import { CartItem } from '../../../types/tea-app';
 
 /**
  * 購物車操作 Hook
@@ -10,7 +11,7 @@ import { showToast } from '../utils';
 export const useCart = () => {
   const { cartItems, cartCount, cartTotal, addToCart, updateCartItem, removeFromCart, clearCart } = useTeaApp();
 
-  const addItemWithToast = useCallback((item: any) => {
+  const addItemWithToast = useCallback((item: CartItem) => {
     addToCart(item);
     showToast('已加入購物車！', 'success');
   }, [addToCart]);
@@ -244,15 +245,15 @@ export const useOrderTracking = (orderId?: string) => {
 /**
  * 表單驗證 Hook
  */
-export const useFormValidation = <T extends Record<string, any>>(
+export const useFormValidation = <T extends Record<string, unknown>>(
   initialValues: T,
-  validationRules: Record<keyof T, (value: any) => string | null>
+  validationRules: Record<keyof T, (value: unknown) => string | null>
 ) => {
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
 
-  const setValue = useCallback((field: keyof T, value: any) => {
+  const setValue = useCallback((field: keyof T, value: unknown) => {
     setValues(prev => ({ ...prev, [field]: value }));
     
     // 即時驗證
@@ -262,13 +263,13 @@ export const useFormValidation = <T extends Record<string, any>>(
     }
   }, [validationRules, touched]);
 
-  const setTouched = useCallback((field: keyof T) => {
+  const setTouchedField = useCallback((field: keyof T) => {
     setTouched(prev => ({ ...prev, [field]: true }));
     
     // 驗證該欄位
     const error = validationRules[field]?.(values[field]);
     setErrors(prev => ({ ...prev, [field]: error || undefined }));
-  }, [validationRules, values]);
+  }, [validationRules, values, setTouched]);
 
   const validateAll = useCallback(() => {
     const newErrors: Partial<Record<keyof T, string>> = {};
@@ -286,7 +287,7 @@ export const useFormValidation = <T extends Record<string, any>>(
     setTouched(Object.keys(values).reduce((acc, key) => ({ ...acc, [key]: true }), {}));
     
     return isValid;
-  }, [validationRules, values]);
+  }, [validationRules, values, setTouched]);
 
   const reset = useCallback(() => {
     setValues(initialValues);
@@ -299,7 +300,7 @@ export const useFormValidation = <T extends Record<string, any>>(
     errors,
     touched,
     setValue,
-    setTouched,
+    setTouched: setTouchedField,
     validateAll,
     reset,
     isValid: Object.keys(errors).length === 0,

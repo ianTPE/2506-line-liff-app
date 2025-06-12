@@ -103,9 +103,11 @@ export const SimpleTeaAppLink: React.FC = () => (
   </Link>
 );
 
-export default {
+const TeaAppComponents = {
   TeaAppEntryCard,
   TeaAppButton,
   TeaAppNavLink,
   SimpleTeaAppLink,
 };
+
+export default TeaAppComponents;

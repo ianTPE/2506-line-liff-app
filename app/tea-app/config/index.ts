@@ -316,9 +316,11 @@ export const MEMBERSHIP_CONFIG = {
   },
 };
 
-export default {
+const TeaAppConfig = {
   DEV_CONFIG,
   MOCK_PRODUCTS,
   MOCK_STORES,
   MEMBERSHIP_CONFIG,
 };
+
+export default TeaAppConfig;

@@ -66,7 +66,7 @@ export const CartPage: React.FC = () => {
     <div className="p-4 space-y-4">
       {/* 購物車項目 */}
       <div className="space-y-3">
-        {cartItems.map((item, index) => (
+        {cartItems.map((item) => (
           <div key={item.id} className="bg-white rounded-xl shadow-md p-4">
             <div className="flex gap-4">
               {/* 商品圖片 */}
@@ -89,9 +89,9 @@ export const CartPage: React.FC = () => {
                 {/* 客製化選項 */}
                 <div className="text-xs text-gray-500 mb-2">
                   {Object.entries(item.customizations)
-                    .filter(([_, value]) => value !== 'none')
-                    .map(([key, value]) => getCustomizationLabel(key, value))
-                    .join(' | ')
+                  .filter(([, value]) => value !== 'none')
+                  .map(([key, value]) => getCustomizationLabel(key, value))
+                  .join(' | ')
                   }
                 </div>
 

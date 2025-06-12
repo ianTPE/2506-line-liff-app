@@ -331,7 +331,7 @@ export const MemberPage: React.FC = () => {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'overview' | 'points' | 'orders' | 'settings')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? 'bg-blue-100 text-blue-700'

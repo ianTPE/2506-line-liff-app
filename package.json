@@ -6,7 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tea:dev": "npm run dev",
+    "tea:build": "npm run build",
+    "tea:help": "node scripts/dev-helper.js help",
+    "tea:check": "node scripts/dev-helper.js check-env",
+    "tea:clean": "node scripts/dev-helper.js clear-cache",
+    "tea:info": "node scripts/dev-helper.js build-info",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@line/liff": "2.26.1",

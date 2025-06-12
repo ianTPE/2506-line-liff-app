@@ -1,59 +1,19 @@
-# Vercel 部署配置文件
-
-# 建置設定
-[build]
-  command = "npm run build"
-  publish = ".next"
-
-# 環境變數（生產環境）
-[build.environment]
-  NEXT_PUBLIC_DEV_MODE = "false"
-
-# 路由重寫規則
-[[redirects]]
-  from = "/tea"
-  to = "/tea-app"
-  status = 301
-
-# 標頭設定
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "SAMEORIGIN"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-# LIFF 應用專用標頭
-[[headers]]
-  for = "/tea-app/*"
-  [headers.values]
-    X-Frame-Options = "ALLOWALL"
-    Content-Security-Policy = "frame-ancestors https://liff.line.me https://*.line.me"
-
-# 靜態資源緩存
-[[headers]]
-  for = "/images/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# API 路由設定
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# 函數設定
-[functions]
-  directory = "api"
-  included_files = ["app/**/*"]
-
-# 開發預覽設定
-[dev]
-  command = "npm run dev"
-  port = 3000
-  
-  # 開發環境變數
-  [dev.env]
-    NEXT_PUBLIC_DEV_MODE = "true"
+{
+  "headers": [
+    {
+      "source": "/tea-app/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOWALL"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/tea",
+      "destination": "/tea-app"
+    }
+  ]
+}

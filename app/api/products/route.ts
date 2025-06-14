@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { Product } from '../../../types/tea-app';
 
@@ -11,7 +11,7 @@ const hasDatabase = !!(supabaseUrl && supabaseKey);
 const isDev = process.env.NODE_ENV === 'development';
 
 // 創建 Supabase 客戶端
-let supabase: any = null;
+let supabase: SupabaseClient | null = null;
 if (hasDatabase) {
   supabase = createClient(supabaseUrl!, supabaseKey!);
 }

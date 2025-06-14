@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 // 檢查是否在開發模式
@@ -12,28 +12,9 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const hasDatabase = !!(supabaseUrl && supabaseKey);
 
 // 創建 Supabase 客戶端
-let supabase: any = null;
+let supabase: SupabaseClient | null = null;
 if (hasDatabase) {
   supabase = createClient(supabaseUrl!, supabaseKey!);
-}
-
-// 統一的資料庫查詢函數（使用 Supabase RPC）
-async function executeQuery(queryText: string) {
-  if (!supabase) {
-    throw new Error('Supabase 客戶端未初始化');
-  }
-  
-  // 使用 Supabase 的 RPC 功能執行原生 SQL
-  const { data, error } = await supabase.rpc('execute_sql', { 
-    sql_query: queryText 
-  });
-  
-  if (error) {
-    // 如果 RPC 不可用，嘗試使用 Supabase 的其他方式
-    throw new Error(`SQL 執行失敗: ${error.message}`);
-  }
-  
-  return { rows: data || [] };
 }
 
 // 測試資料庫連接
@@ -57,27 +38,6 @@ async function testConnection() {
   } catch (error) {
     throw error;
   }
-}
-
-// 使用 Supabase 客戶端創建表格
-async function createTable(tableName: string, definition: string) {
-  if (!supabase) {
-    throw new Error('Supabase 客戶端未初始化');
-  }
-  
-  // 直接使用 SQL 創建表格
-  const { data, error } = await supabase.rpc('execute_sql', {
-    sql_query: `CREATE TABLE IF NOT EXISTS ${tableName} (${definition})`
-  });
-  
-  if (error) {
-    // 如果 RPC 不可用，我們需要使用其他方法
-    console.log(`無法使用 RPC 創建表格 ${tableName}:`, error.message);
-    // 返回成功，因為表格可能已經存在
-    return { success: true };
-  }
-  
-  return { success: true, data };
 }
 
 // 插入初始數據

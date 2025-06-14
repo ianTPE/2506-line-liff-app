@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { Store } from '../../../types/tea-app';
 
@@ -11,7 +11,7 @@ const hasDatabase = !!(supabaseUrl && supabaseKey);
 const isDev = process.env.NODE_ENV === 'development';
 
 // 創建 Supabase 客戶端
-let supabase: any = null;
+let supabase: SupabaseClient | null = null;
 if (hasDatabase) {
   supabase = createClient(supabaseUrl!, supabaseKey!);
 }
@@ -140,7 +140,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 準備更新的資料
-    const updateData: any = {};
+    const updateData: { current_queue_count?: number; average_wait_time?: number } = {};
     if (current_queue_count !== undefined) {
       updateData.current_queue_count = current_queue_count;
     }

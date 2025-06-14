@@ -58,6 +58,10 @@ export async function GET() {
 
   // 生產模式或有資料庫時，使用 Supabase 資料庫
   try {
+    if (!supabase) {
+      throw new Error('Supabase 客戶端未初始化');
+    }
+    
     const { data, error } = await supabase
       .from('stores')
       .select('*')
@@ -129,6 +133,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
+    if (!supabase) {
+      throw new Error('Supabase 客戶端未初始化');
+    }
+    
     const body = await request.json();
     const { store_id, current_queue_count, average_wait_time } = body;
 
@@ -156,7 +164,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 更新門市資料
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('stores')
       .update(updateData)
       .eq('id', store_id)

@@ -64,6 +64,10 @@ export async function GET(request: NextRequest) {
 
   // 生產模式或有資料庫時，使用 Supabase 資料庫
   try {
+    if (!supabase) {
+      throw new Error('Supabase 客戶端未初始化');
+    }
+    
     let query = supabase
       .from('products')
       .select('*')

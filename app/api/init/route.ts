@@ -5,6 +5,8 @@ import { NextResponse } from 'next/server';
 const isDev = process.env.NODE_ENV === 'development';
 // 支援多種資料庫環境變數（Vercel Postgres、Supabase、Neon）
 const hasDatabase = !!(
+  process.env.DATABASE_URL_DIRECT || // 手動添加的直接連接（優先）
+  process.env.POSTGRES_URL_NON_POOLING ||
   process.env.POSTGRES_URL || 
   process.env.DATABASE_URL ||
   process.env.SUPABASE_POSTGRES_URL ||
@@ -44,18 +46,30 @@ export async function GET() {
 
   try {
     // 檢查是否有資料庫連線
-    // 對於 Supabase，嘗試使用非池化連線
-    if (isSupabase && process.env.POSTGRES_URL_NON_POOLING && !process.env.VERCEL_ENV) {
-      // 在本地開發時，臨時設定 POSTGRES_URL 為 non-pooling URL
+    // 優先使用直接連接（非池化）
+    const originalPostgresUrl = process.env.POSTGRES_URL;
+    
+    if (process.env.DATABASE_URL_DIRECT) {
+      console.log('使用手動設定的直接連接');
+      process.env.POSTGRES_URL = process.env.DATABASE_URL_DIRECT;
+    } else if (process.env.POSTGRES_URL_NON_POOLING) {
+      console.log('使用 NON_POOLING 連接');
       process.env.POSTGRES_URL = process.env.POSTGRES_URL_NON_POOLING;
     }
     
     await sql`SELECT 1 as test`;
     
+    // 還原原始設定
+    if (originalPostgresUrl) {
+      process.env.POSTGRES_URL = originalPostgresUrl;
+    }
+    
     return NextResponse.json({
       status: 'success',
       message: '資料庫連線正常',
       database_type: isSupabase ? 'Supabase' : 'Vercel Postgres',
+      connection_type: process.env.DATABASE_URL_DIRECT ? 'Direct' : 
+                      process.env.POSTGRES_URL_NON_POOLING ? 'Non-Pooling' : 'Default',
       info: {
         description: '發送 POST 請求到此端點來初始化資料庫',
         endpoint: '/api/init',
@@ -120,7 +134,18 @@ export async function POST() {
       }
     });
   }
+  
   try {
+    // 優先使用直接連接（非池化）
+    const originalPostgresUrl = process.env.POSTGRES_URL;
+    
+    if (process.env.DATABASE_URL_DIRECT) {
+      console.log('初始化：使用手動設定的直接連接');
+      process.env.POSTGRES_URL = process.env.DATABASE_URL_DIRECT;
+    } else if (process.env.POSTGRES_URL_NON_POOLING) {
+      console.log('初始化：使用 NON_POOLING 連接');
+      process.env.POSTGRES_URL = process.env.POSTGRES_URL_NON_POOLING;
+    }
     // 建立 users 表
     await sql`
       CREATE TABLE IF NOT EXISTS users (
@@ -225,9 +250,28 @@ export async function POST() {
       ON CONFLICT (id) DO NOTHING
     `;
 
+    // 還原原始設定
+    if (originalPostgresUrl) {
+      process.env.POSTGRES_URL = originalPostgresUrl;
+    }
+
     return NextResponse.json({ 
       message: '資料庫初始化成功！', 
-      status: 'success' 
+      status: 'success',
+      database_type: isSupabase ? 'Supabase' : 'Vercel Postgres',
+      connection_type: process.env.DATABASE_URL_DIRECT ? 'Direct' : 
+                      process.env.POSTGRES_URL_NON_POOLING ? 'Non-Pooling' : 'Default',
+      tables_created: [
+        'users (用戶資料)',
+        'stores (門市資訊)',
+        'products (商品資料)',
+        'orders (訂單記錄)',
+        'order_items (訂單項目)'
+      ],
+      sample_data: {
+        stores: '3 間門市',
+        products: '8 個商品'
+      }
     });
 
   } catch (error) {

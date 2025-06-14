@@ -12,6 +12,13 @@ const hasDatabase = !!(
   process.env.SUPABASE_URL
 );
 
+// 檢查是否為 Supabase 環境
+const isSupabase = !!(
+  process.env.SUPABASE_URL || 
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 // GET 請求：顯示資料庫狀態
 export async function GET() {
   if (!hasDatabase && isDev) {
@@ -37,23 +44,58 @@ export async function GET() {
 
   try {
     // 檢查是否有資料庫連線
+    // 對於 Supabase，嘗試使用非池化連線
+    if (isSupabase && process.env.POSTGRES_URL_NON_POOLING && !process.env.VERCEL_ENV) {
+      // 在本地開發時，臨時設定 POSTGRES_URL 為 non-pooling URL
+      process.env.POSTGRES_URL = process.env.POSTGRES_URL_NON_POOLING;
+    }
+    
     await sql`SELECT 1 as test`;
     
     return NextResponse.json({
       status: 'success',
       message: '資料庫連線正常',
+      database_type: isSupabase ? 'Supabase' : 'Vercel Postgres',
       info: {
         description: '發送 POST 請求到此端點來初始化資料庫',
         endpoint: '/api/init',
         method: 'POST',
-        example: 'curl -X POST http://localhost:3000/api/init'
+        example: 'curl -X POST https://www.aipowered.top/api/init'
       }
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+    
+    // 為 Supabase 提供特別的錯誤訊息
+    if (isSupabase) {
+      return NextResponse.json({
+        status: 'error', 
+        message: 'Supabase 資料庫連線失敗',
+        details: errorMessage,
+        database_type: 'Supabase',
+        troubleshooting: {
+          possible_causes: [
+            'Supabase 資料庫未啟動或暫停',
+            'POSTGRES_URL 環境變數格式不正確',
+            '網路連線問題或防火牆限制',
+            '@vercel/postgres 與 Supabase 的相容性問題'
+          ],
+          solutions: [
+            '確認 Supabase 項目狀態為「活躍」',
+            '檢查 POSTGRES_URL 是否以 postgresql:// 開頭',
+            '嘗試使用 POSTGRES_URL_NON_POOLING 環境變數',
+            '考慮使用 Supabase 原生客戶端'
+          ]
+        },
+        next_steps: '請前往 Supabase Dashboard 確認資料庫狀態'
+      });
+    }
+    
     return NextResponse.json({
       status: 'error', 
-      message: '資料庫連線失敗 - 請先在 Vercel 設定 Postgres 資料庫',
-      details: error instanceof Error ? error.message : '未知錯誤',
+      message: '資料庫連線失敗',
+      details: errorMessage,
+      database_type: 'Unknown',
       setup_guide: '請參考 VERCEL_BACKEND_SETUP.md 文件'
     });
   }

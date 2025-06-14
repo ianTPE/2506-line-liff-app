@@ -24,17 +24,32 @@ async function testConnection() {
   }
   
   try {
-    // 簡單的測試查詢
+    // 嘗試查詢我們的 stores 表（只取 1 筆資料）
     const { data, error } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
+      .from('stores')
+      .select('id')
       .limit(1);
     
     if (error) {
-      throw new Error(`連接測試失敗: ${error.message}`);
+      // 如果表不存在，這是可以預期的
+      if (error.message.includes('does not exist') || error.message.includes('relation') || error.code === 'PGRST106') {
+        return { 
+          success: true, 
+          method: 'connection_verified',
+          note: '連接正常，但表格尚未創建，需要執行初始化' 
+        };
+      }
+      
+      // 其他錯誤可能是真正的連接問題
+      throw new Error(`查詢測試失敗: ${error.message}`);
     }
     
-    return { success: true, data };
+    return { 
+      success: true, 
+      method: 'table_query',
+      data,
+      note: '連接正常，表格已存在' 
+    };
   } catch (error) {
     throw error;
   }

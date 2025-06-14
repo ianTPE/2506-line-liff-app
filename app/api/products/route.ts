@@ -1,6 +1,6 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
-import { Product } from '../../../../types/tea-app';
+import { Product } from '../../../types/tea-app';
 
 // 檢查是否有資料庫連線
 const hasDatabase = !!process.env.POSTGRES_URL;

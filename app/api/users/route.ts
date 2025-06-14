@@ -1,6 +1,6 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
-import { User } from '../../../../types/tea-app';
+import { User } from '../../../types/tea-app';
 
 // 註冊或更新用戶
 export async function POST(request: NextRequest) {

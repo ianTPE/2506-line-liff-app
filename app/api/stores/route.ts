@@ -7,7 +7,7 @@ const hasDatabase = !!process.env.POSTGRES_URL;
 const isDev = process.env.NODE_ENV === 'development';
 
 // 取得所有門市
-export async function GET(request: NextRequest) {
+export async function GET() {
   // 在開發模式且沒有資料庫時，直接使用模擬資料
   if (!hasDatabase && isDev) {
     try {
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         fallback: true,
         source: 'mock_data'
       });
-    } catch (fallbackError) {
+    } catch {
       return NextResponse.json(
         { 
           status: 'error',

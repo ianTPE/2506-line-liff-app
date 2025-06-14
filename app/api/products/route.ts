@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         fallback: true,
         source: 'mock_data'
       });
-    } catch (fallbackError) {
+    } catch {
       return NextResponse.json(
         { 
           status: 'error',

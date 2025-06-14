@@ -1,6 +1,6 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
-import { Order, CartItem } from '../../../../types/tea-app';
+import { Order } from '../../../../types/tea-app';
 
 // 建立訂單
 export async function POST(request: NextRequest) {

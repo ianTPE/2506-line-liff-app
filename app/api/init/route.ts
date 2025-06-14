@@ -1,5 +1,5 @@
 import { sql } from '@vercel/postgres';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 // 檢查是否在開發模式
 const isDev = process.env.NODE_ENV === 'development';
@@ -30,7 +30,7 @@ export async function GET() {
 
   try {
     // 檢查是否有資料庫連線
-    const result = await sql`SELECT 1 as test`;
+    await sql`SELECT 1 as test`;
     
     return NextResponse.json({
       status: 'success',

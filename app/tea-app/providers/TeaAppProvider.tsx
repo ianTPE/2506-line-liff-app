@@ -27,11 +27,11 @@ interface TeaAppProviderProps {
   children: React.ReactNode;
 }
 
-// Bubble API 配置
-const BUBBLE_API_BASE = process.env.NEXT_PUBLIC_BUBBLE_API_BASE || 'https://tea-time-app.bubbleapps.io/api/1.1/wf';
+// API 配置 - 使用 Vercel API Routes
+const API_BASE = '/api';
 
 export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
-  const { liff, isLoggedIn, isReady } = useLiff();
+  const { liff, isLoggedIn, isReady, liffError } = useLiff();
   
   // 狀態管理
   const [user, setUser] = useState<User | null>(null);
@@ -73,7 +73,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
   // API 請求函數
   const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<ApiResponse<unknown>> => {
     try {
-      const response = await fetch(`${BUBBLE_API_BASE}${endpoint}`, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
@@ -84,12 +84,12 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
+        throw new Error(data.error || data.message || 'API request failed');
       }
 
       return {
         status: 'success',
-        data: data,
+        data: data.data || data,
       };
     } catch (error) {
       console.error(`API Error (${endpoint}):`, error);
@@ -119,7 +119,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
   const loadProducts = useCallback(async (category: string = 'all') => {
     try {
       setIsLoading(true);
-      const endpoint = category === 'all' ? '/get-products' : `/get-products?category=${category}`;
+      const endpoint = category === 'all' ? '/products' : `/products?category=${category}`;
       const response = await apiRequest(endpoint) as ApiResponse<Product[]>;
       
       if (response.status === 'success' && response.data) {
@@ -206,7 +206,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
         picture_url: profile.pictureUrl,
       };
 
-      const response = await apiRequest('/register-user', {
+      const response = await apiRequest('/users', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
@@ -225,7 +225,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
 
     try {
       const profile = await liff.getProfile();
-      const response = await apiRequest(`/get-user-data?user_id=${profile.userId}`) as ApiResponse<User>;
+      const response = await apiRequest(`/users?user_id=${profile.userId}`) as ApiResponse<User>;
       
       if (response.status === 'success' && response.data) {
         setUser(response.data);
@@ -269,7 +269,7 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
         ...orderData,
       };
 
-      const response = await apiRequest('/create-order', {
+      const response = await apiRequest('/orders', {
         method: 'POST',
         body: JSON.stringify(orderRequest),
       }) as ApiResponse<Order>;
@@ -304,32 +304,79 @@ export const TeaAppProvider: React.FC<TeaAppProviderProps> = ({ children }) => {
 
   // 初始化
   useEffect(() => {
-    if (isReady && isLoggedIn) {
-      const initializeApp = async () => {
-        try {
+    const initializeApp = async () => {
+      try {
+        // 在開發模式且沒有 LIFF 環境時，直接使用模擬數據
+        const isDev = process.env.NODE_ENV === 'development';
+        const canUseLiff = isReady && !liffError;
+        
+        if (isDev && !canUseLiff) {
+          console.log('本地開發模式：使用模擬數據，略過 LIFF 初始化');
+          
+          // 直接載入模擬資料
+          await loadProducts();
+          
+          // 載入門市數據
+          const storesResponse = await apiRequest('/stores') as ApiResponse<Store[]>;
+          if (storesResponse.status === 'success' && storesResponse.data) {
+            setStores(storesResponse.data);
+            if (storesResponse.data.length > 0) {
+              setSelectedStore(storesResponse.data[0]);
+            }
+          }
+          
+          // 設定模擬用戶
+          const mockUser: User = {
+            id: 'dev_user_001',
+            line_user_id: 'dev_user_001',
+            display_name: '開發測試用戶',
+            membership_level: 'gold',
+            points_balance: 500,
+            wallet_balance: 1000,
+            created_date: new Date().toISOString(),
+            last_login: new Date().toISOString(),
+            picture_url: undefined,
+          };
+          setUser(mockUser);
+          
+          setIsLoading(false);
+          return;
+        }
+        
+        // 正常 LIFF 流程
+        if (canUseLiff && isLoggedIn) {
           await registerUser();
           await loadUserData();
           await loadProducts();
           
-          // 載入模擬門市數據
-          const { MOCK_STORES } = await import('../config');
-          setStores(MOCK_STORES);
-          
-          // 設置預設門市（選擇第一個門市）
-          if (MOCK_STORES.length > 0) {
-            setSelectedStore(MOCK_STORES[0]);
+          // 載入門市數據
+          const storesResponse = await apiRequest('/stores') as ApiResponse<Store[]>;
+          if (storesResponse.status === 'success' && storesResponse.data) {
+            setStores(storesResponse.data);
+            if (storesResponse.data.length > 0) {
+              setSelectedStore(storesResponse.data[0]);
+            }
+          } else {
+            const { MOCK_STORES } = await import('../config');
+            setStores(MOCK_STORES);
+            if (MOCK_STORES.length > 0) {
+              setSelectedStore(MOCK_STORES[0]);
+            }
           }
-          
-        } catch (error) {
-          console.error('Failed to initialize app:', error);
-        } finally {
+        } else if (canUseLiff && !isLoggedIn) {
+          // LIFF 已初始化但未登入
+          console.log('等待 LIFF 登入...');
           setIsLoading(false);
         }
-      };
-      
-      initializeApp();
-    }
-  }, [isReady, isLoggedIn, registerUser, loadUserData, loadProducts]);
+        
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    initializeApp();
+  }, [isReady, isLoggedIn, liffError, registerUser, loadUserData, loadProducts]);
 
   const value: TeaAppContextType = {
     // 狀態

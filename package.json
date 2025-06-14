@@ -13,12 +13,17 @@
     "tea:check": "node scripts/dev-helper.js check-env",
     "tea:clean": "node scripts/dev-helper.js clear-cache",
     "tea:info": "node scripts/dev-helper.js build-info",
+    "db:init": "curl -X POST http://localhost:3000/api/init",
+    "db:init:prod": "curl -X POST https://your-app.vercel.app/api/init",
+    "api:test": "node scripts/test-api.js",
+    "api:test:simple": "curl http://localhost:3000/api/products && curl http://localhost:3000/api/stores",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@line/liff": "2.26.1",
+    "@vercel/postgres": "^0.10.0",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

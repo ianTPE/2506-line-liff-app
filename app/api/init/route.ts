@@ -3,7 +3,14 @@ import { NextResponse } from 'next/server';
 
 // 檢查是否在開發模式
 const isDev = process.env.NODE_ENV === 'development';
-const hasDatabase = !!process.env.POSTGRES_URL;
+// 支援多種資料庫環境變數（Vercel Postgres、Supabase、Neon）
+const hasDatabase = !!(
+  process.env.POSTGRES_URL || 
+  process.env.DATABASE_URL ||
+  process.env.SUPABASE_POSTGRES_URL ||
+  process.env.DIRECT_URL ||
+  process.env.SUPABASE_URL
+);
 
 // GET 請求：顯示資料庫狀態
 export async function GET() {
